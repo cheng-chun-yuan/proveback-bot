@@ -2,6 +2,8 @@
 
 A hackathon prototype that verifies the identity of Google Meet attendees with passport zero-knowledge proofs (Self Protocol).
 
+**Live demo app: https://provebackbot.vercel.app/**
+
 ## Demo
 
 [![ProveBackBot showing the QR code and live verification list in Google Meet](docs/meet-verified.png)](docs/demo.mp4)
