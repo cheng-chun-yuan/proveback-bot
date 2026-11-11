@@ -1,44 +1,50 @@
 # ProveBackBot
 
-用護照零知識證明（Self Protocol）驗證 Google Meet 與會者身分的黑客松原型。
+A hackathon prototype that verifies the identity of Google Meet attendees with passport zero-knowledge proofs (Self Protocol).
 
 ## Demo
 
-[![ProveBackBot 在 Google Meet 中顯示 QR code 與即時驗證名單](docs/meet-verified.png)](docs/demo.mp4)
+[![ProveBackBot showing the QR code and live verification list in Google Meet](docs/meet-verified.png)](docs/demo.mp4)
 
-▶️ [30 秒示範影片](docs/demo.mp4)：成員 onboarding → 建立會議 → 派 bot 進 Google Meet → 掃 QR 後名單即時顯示驗證結果。
+▶️ [30-second demo video](docs/demo.mp4): member onboarding → create a meeting → send the bot into Google Meet → the list shows the verification result as soon as the QR code is scanned.
 
-控制台（workspace 政策、成員護照綁定狀態、建立會議）：
+The console (workspace policy, member passport binding status, meeting creation):
 
 ![ProveBackBot Console](docs/console.png)
 
-## 專案結構
+### Scanning with the Self App on a phone
 
-- `public/index.html`：控制台（workspace 政策、成員 onboarding、建立會議、派 bot、模擬測試）
-- `public/bot-screen.html?m=<會議ID>`：bot 的鏡頭畫面（QR code + 即時名單），由 Recall.ai 串流進會議
-- `public/s.html?s=<session>`：外部與會者／onboarding 的專屬驗證頁
-- `api/verify.js`：Self App 回傳證明的端點（`SelfBackendVerifier`）
-- `api/bot.js`、`api/recall-webhook.js`：Recall.ai 機器人與參與者加入事件
-- `api/simulate.js`：不用 Self App 也能測試的模擬端點
+<a href="docs/phone-demo.mp4"><img src="docs/phone-verified.jpg" alt="Self App on a phone showing Proof Verified while the Meet list updates" width="300"></a>
 
-## 環境變數
+▶️ [24-second phone video](docs/phone-demo.mp4): scan the onboarding QR to bind a passport (the console shows "Passport bound"), then scan the QR on the bot's screen during the meeting. The phone shows "Proof Verified" and the Meet list gets its check mark right away.
 
-| 變數 | 說明 |
+## Project structure
+
+- `public/index.html`: console (workspace policy, member onboarding, meeting creation, sending the bot, simulated testing)
+- `public/bot-screen.html?m=<meeting ID>`: the bot's camera feed (QR code + live list), streamed into the meeting by Recall.ai
+- `public/s.html?s=<session>`: personal verification page for external guests and onboarding
+- `api/verify.js`: endpoint that receives proofs from the Self App (`SelfBackendVerifier`)
+- `api/bot.js`, `api/recall-webhook.js`: the Recall.ai bot and participant-join events
+- `api/simulate.js`: simulation endpoint for testing without the Self App
+
+## Environment variables
+
+| Variable | Description |
 |---|---|
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob（連接 Blob store 時自動建立）。沒有時改用記憶體，只適合本機測試 |
-| `RECALL_API_KEY` | Recall.ai API key（派 bot 必填） |
-| `RECALL_REGION` | Recall 區域，預設 `us-east-1` |
-| `SELF_MOCK` | 預設 `true`：接受 Self App 的 mock passport；正式護照設 `false` |
-| `SELF_OFAC` | `true` 時要求 OFAC 檢查 |
-| `SELF_SCOPE` | Self scope，預設 `provebackbot-demo` |
-| `PUBLIC_BASE_URL` | 對外網址；預設用 Vercel 的正式網域。Self 的 endpoint 由它決定，換網域時 QR code 與驗證端必須一致 |
-| `ALLOW_SIMULATE` | 設 `false` 關閉模擬端點（正式環境務必關閉） |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (created automatically when a Blob store is connected). Without it, state is kept in memory, which is only suitable for local testing |
+| `RECALL_API_KEY` | Recall.ai API key (required to send the bot) |
+| `RECALL_REGION` | Recall region, defaults to `us-east-1` |
+| `SELF_MOCK` | Defaults to `true`: accepts mock passports from the Self App; set to `false` for real passports |
+| `SELF_OFAC` | Requires an OFAC check when `true` |
+| `SELF_SCOPE` | Self scope, defaults to `provebackbot-demo` |
+| `PUBLIC_BASE_URL` | Public URL; defaults to the Vercel production domain. It determines the Self endpoint, so the QR code and the verifier must agree when the domain changes |
+| `ALLOW_SIMULATE` | Set to `false` to disable the simulation endpoint (always disable it in production) |
 
-## 驗證規則
+## Verification rules
 
-- 成員共用 QR：用 nullifier 對應 onboarding 時綁定的成員；對不上且 strict mode → ✕
-- 外部與會者專屬 QR：國籍不在受限名單、（可選）OFAC、護照姓名需包含會議顯示名稱的每個字
-- 同一本護照在同一場會議只能讓一個席位通過
+- Shared member QR: the nullifier is matched against the member bound during onboarding; no match in strict mode → ✕
+- Personal QR for external guests: nationality must not be on the restricted list, (optionally) OFAC, and the passport name must contain every word of the meeting display name
+- One passport can only pass one seat per meeting
 
-國籍限制在後端用揭露的國籍判斷，好處是被擋下時能顯示原因；代價是後端會看到國籍。
-之後可改用 Self 電路內建的 `excludedCountries`，讓後端只知道「不在名單內」。
+Nationality restrictions are checked on the backend using the disclosed nationality. The upside is that a rejection can show its reason; the cost is that the backend sees the nationality.
+This could later move to the `excludedCountries` check built into the Self circuit, so the backend only learns "not on the list".
