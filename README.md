@@ -2,6 +2,18 @@
 
 用護照零知識證明（Self Protocol）驗證 Google Meet 與會者身分的黑客松原型。
 
+## Demo
+
+[![ProveBackBot 在 Google Meet 中顯示 QR code 與即時驗證名單](docs/meet-verified.png)](docs/demo.mp4)
+
+▶️ [30 秒示範影片](docs/demo.mp4)：成員 onboarding → 建立會議 → 派 bot 進 Google Meet → 掃 QR 後名單即時顯示驗證結果。
+
+控制台（workspace 政策、成員護照綁定狀態、建立會議）：
+
+![ProveBackBot Console](docs/console.png)
+
+## 專案結構
+
 - `public/index.html`：控制台（workspace 政策、成員 onboarding、建立會議、派 bot、模擬測試）
 - `public/bot-screen.html?m=<會議ID>`：bot 的鏡頭畫面（QR code + 即時名單），由 Recall.ai 串流進會議
 - `public/s.html?s=<session>`：外部與會者／onboarding 的專屬驗證頁
