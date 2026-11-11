@@ -1,37 +1,32 @@
-# proveback-bot
+# ProveBackBot
 
-進會議要求與會者驗證身份的 bot。政策與驗證都在 `proveback-app`,這裡不存個資。
+用護照零知識證明（Self Protocol）驗證 Google Meet 與會者身分的黑客松原型。
 
-- 有人加入 → 在聊天室發驗證連結。
-- 有人貼驗證碼 → 向 `proveback-app` 兌換,公告徽章(例:`✅ 小明|護照已驗證|國籍:TWN`)。
-- 逾時未驗證 → 在聊天室提醒。
+- `public/index.html`：控制台（workspace 政策、成員 onboarding、建立會議、派 bot、模擬測試）
+- `public/bot-screen.html?m=<會議ID>`：bot 的鏡頭畫面（QR code + 即時名單），由 Recall.ai 串流進會議
+- `public/s.html?s=<session>`：外部與會者／onboarding 的專屬驗證頁
+- `api/verify.js`：Self App 回傳證明的端點（`SelfBackendVerifier`）
+- `api/bot.js`、`api/recall-webhook.js`：Recall.ai 機器人與參與者加入事件
+- `api/simulate.js`：不用 Self App 也能測試的模擬端點
 
-## 啟動
+## 環境變數
 
-```bash
-npm install
-cp .env.example .env
-npm start
-```
+| 變數 | 說明 |
+|---|---|
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob（連接 Blob store 時自動建立）。沒有時改用記憶體，只適合本機測試 |
+| `RECALL_API_KEY` | Recall.ai API key（派 bot 必填） |
+| `RECALL_REGION` | Recall 區域，預設 `us-east-1` |
+| `SELF_MOCK` | 預設 `true`：接受 Self App 的 mock passport；正式護照設 `false` |
+| `SELF_OFAC` | `true` 時要求 OFAC 檢查 |
+| `SELF_SCOPE` | Self scope，預設 `provebackbot-demo` |
+| `PUBLIC_BASE_URL` | 對外網址；預設用 Vercel 的正式網域。Self 的 endpoint 由它決定，換網域時 QR code 與驗證端必須一致 |
+| `ALLOW_SIMULATE` | 設 `false` 關閉模擬端點（正式環境務必關閉） |
 
-沒填 `RECALL_API_KEY` 時是**模擬會議室模式**:從 ProveBack 派 bot 後會得到一個 `/sim/?room=…` 連結,開多個分頁就能扮演多位與會者。
+## 驗證規則
 
-## 接上真實會議(Recall.ai)
+- 成員共用 QR：用 nullifier 對應 onboarding 時綁定的成員；對不上且 strict mode → ✕
+- 外部與會者專屬 QR：國籍不在受限名單、（可選）OFAC、護照姓名需包含會議顯示名稱的每個字
+- 同一本護照在同一場會議只能讓一個席位通過
 
-1. 申請 Recall.ai API key,填入 `RECALL_API_KEY`,`RECALL_REGION` 要跟帳號區域一致。
-2. 用 ngrok 或 Cloudflare Tunnel 把 4100 port 公開,把公開網址填入 `PUBLIC_URL`。
-3. 在 ProveBack 貼上 Google Meet 連結派 bot,主持人在會議裡准許 bot 加入。
-
-Zoom 與 Teams 用同一套程式,貼對應的會議連結即可。
-
-## 注意
-
-- Recall 的 bot 預設會錄製會議。正式使用前請在 `adapters/recall.js` 的 `recording_config` 關掉錄製,或明確告知與會者。
-- 會議平台不開放在別人頭像上加徽章,所以徽章是以聊天室公告呈現。
-- bot 沒有主持人權限,不會踢人,逾時只會提醒。
-
-## 結構
-
-- `server.js`:加入、聊天、逾時的處理邏輯。
-- `adapters/recall.js`:Recall.ai 的建立 bot、發訊息、webhook。
-- `adapters/sim.js` + `public/`:模擬會議室。
+國籍限制在後端用揭露的國籍判斷，好處是被擋下時能顯示原因；代價是後端會看到國籍。
+之後可改用 Self 電路內建的 `excludedCountries`，讓後端只知道「不在名單內」。

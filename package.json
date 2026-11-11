@@ -1,12 +1,13 @@
 {
-  "name": "proveback-bot",
+  "name": "provebackbot",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "start": "node --env-file-if-exists=.env server.js"
-  },
+  "description": "ProveBackBot: passport-based ZK verification for Google Meet (hackathon prototype)",
+  "engines": { "node": "22.x" },
   "dependencies": {
-    "express": "^4.21.2"
+    "@selfxyz/common": "0.0.10",
+    "@selfxyz/core": "1.2.0-beta.3",
+    "@vercel/blob": "2.8.0",
+    "qrcode": "1.5.4"
   }
 }

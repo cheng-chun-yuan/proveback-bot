@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProveBackBot bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* 設計給 Recall 的 1280×720 鏡頭畫面；在一般瀏覽器裡會等比縮放（方便用筆電分享畫面當退路） */
+:root{--bg:#0E1430;--panel:#161E44;--line:#2A3463;--ink:#EEF1FA;--ink2:#9BA3C4;--ok:#47C487;--bad:#F06A5F;--wait:#E0A33A;
+  --sans:"Instrument Sans","Noto Sans TC","PingFang TC",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+.stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;display:grid;grid-template-columns:520px 1fr;gap:28px;padding:36px}
+.qrcard{background:#fff;color:#16204A;border-radius:28px;padding:30px 30px 26px;display:flex;flex-direction:column;align-items:center}
+.qrcard img{width:400px;height:400px;image-rendering:pixelated}
+.qrcard h1{font-size:30px;line-height:1.2;margin:16px 0 6px;text-align:center}
+.qrcard p{margin:0;font-size:18px;color:#4A5378;text-align:center;line-height:1.45}
+.side{display:flex;flex-direction:column;min-width:0}
+.brand{display:flex;align-items:baseline;gap:14px}
+.brand b{font-size:34px;letter-spacing:-0.02em}
+.brand span{font-size:20px;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
+.chip{border:1.5px solid var(--line);border-radius:999px;padding:5px 13px;font-size:16px;color:var(--ink2)}
+.roster{flex:1;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.row{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:14px;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:12px 16px}
+.row.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{border-color:var(--ink)}100%{border-color:var(--line)}}
+.av{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:20px;background:#22306A}
+.nm{font-size:23px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.why{font-size:16px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:700}
+.st.ok{background:var(--ok);color:#0E1430}.st.fail{background:var(--bad);color:#0E1430}.st.pending{border:3px dashed var(--wait);color:var(--wait);font-size:20px}
+.empty{color:var(--ink2);font-size:20px;padding:20px 4px}
+.foot{margin-top:14px;font-size:19px;color:var(--ink2)}
+.foot b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <section class="qrcard">
+    <img id="qr" alt="成員驗證 QR code">
+    <h1>用 Self App 掃描驗證</h1>
+    <p>workspace 成員請直接掃描。<br>外部與會者請開啟聊天室裡的專屬連結。</p>
+  </section>
+  <section class="side">
+    <div class="brand"><b>ProveBackBot</b><span id="ws">載入中…</span></div>
+    <div class="chips" id="chips"></div>
+    <div class="roster" id="roster"><div class="empty">等待與會者驗證…</div></div>
+    <div class="foot" id="foot"></div>
+  </section>
+</div>
+<script>
+(function () {
+  "use strict";
+  const id = new URLSearchParams(location.search).get("m");
+  const stage = document.getElementById("stage");
+  function fit() { const s = Math.min(innerWidth / 1280, innerHeight / 720); stage.style.transform = `translate(-50%,-50%) scale(${s})`; }
+  addEventListener("resize", fit); fit();
+  if (!id) { document.getElementById("ws").textContent = "網址缺少 ?m=會議 ID"; return; }
+
+  const KIND = { member: "成員", guest: "外部與會者", unknown: "未登記" };
+  const ICON = { ok: "✓", fail: "✕", pending: "…" };
+  const esc = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let lastSig = {}, qrSet = false;
+
+  async function tick() {
+    try {
+      const r = await fetch(`/api/meeting?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const m = await r.json();
+      if (!qrSet) { document.getElementById("qr").src = `/api/qr?s=${m.memberSession}`; qrSet = true; }
+      const p = (m.workspace && m.workspace.policy) || {};
+      document.getElementById("ws").textContent = (m.workspace && m.workspace.name) || "";
+      document.getElementById("chips").innerHTML =
+        (p.strict ? '<span class="chip">Strict mode：只允許已登記成員</span>' : "") +
+        ((p.excludedCountries || []).length ? `<span class="chip">受限國籍：${esc(p.excludedCountries.join("、"))}</span>` : "");
+      const seats = m.seats.slice().sort((a, b) => ({ pending: 0, fail: 1, ok: 2 }[a.status] - { pending: 0, fail: 1, ok: 2 }[b.status]));
+      document.getElementById("roster").innerHTML = seats.length ? seats.slice(0, 6).map((s) => {
+        const sig = s.status + s.reason; const flash = lastSig[s.seatId] !== undefined && lastSig[s.seatId] !== sig; lastSig[s.seatId] = sig;
+        const why = s.status === "pending" ? (s.kind === "guest" ? "請開啟聊天室的專屬連結" : "請掃描左側 QR code") : s.reason;
+        return `<div class="row${flash ? " flash" : ""}"><div class="av">${esc((s.name || "?").slice(0, 1))}</div>
+          <div><div class="nm">${esc(s.name)}</div><div class="why">${esc(KIND[s.kind] || "")}｜${esc(why)}</div></div>
+          <div class="st ${s.status}">${ICON[s.status]}</div></div>`;
+      }).join("") : '<div class="empty">等待與會者驗證…</div>';
+      const ok = m.seats.filter((s) => s.status === "ok").length, bad = m.seats.filter((s) => s.status === "fail").length;
+      document.getElementById("foot").innerHTML = `<b>${ok}</b> 位已驗證　<b>${bad}</b> 位未通過　<b>${m.seats.length - ok - bad}</b> 位待驗證`;
+    } catch (e) { document.getElementById("foot").textContent = "連線中斷，重試中…"; }
+  }
+  tick(); setInterval(tick, 1500);
+})();
+</script>
+</body>
+</html>

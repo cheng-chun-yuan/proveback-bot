@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ProveBackBot 身分驗證</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF0F5;--card:#fff;--ink:#16204A;--ink2:#4A5378;--accent:#16204A;--on-accent:#fff;
+  --sans:"Instrument Sans","Noto Sans TC","PingFang TC",system-ui,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1430;--card:#161E44;--ink:#E6E9F5;--ink2:#9BA3C4;--accent:#E6E9F5;--on-accent:#0E1430;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--sans);display:grid;place-items:center;padding:24px}
+main{max-width:420px;width:100%;background:var(--card);border-radius:24px;padding:28px;text-align:center}
+h1{font-size:1.5rem;margin:0 0 8px}
+p{color:var(--ink2);line-height:1.55;margin:0 0 16px}
+.qr{background:#fff;border-radius:16px;padding:12px;display:inline-block}
+.qr img{width:min(300px,70vw);height:auto;display:block}
+a.btn{display:inline-block;margin-top:18px;background:var(--accent);color:var(--on-accent);text-decoration:none;border-radius:999px;padding:12px 22px;font-weight:600}
+a.btn:focus-visible{outline:3px solid #3A5BD9;outline-offset:3px}
+small{display:block;margin-top:16px;color:var(--ink2)}
+</style>
+</head>
+<body>
+<main>
+  <h1>護照身分驗證</h1>
+  <p>用手機上的 Self App 掃描這個 QR code，再依指示感應護照。只會分享姓名與國籍，不會分享護照號碼或照片。</p>
+  <div class="qr"><img id="qr" alt="Self App 驗證 QR code"></div>
+  <div><a class="btn" id="open">已經在手機上？直接開啟 Self App</a></div>
+  <small>沒有 Self App？請先到 App Store 或 Google Play 搜尋「Self」安裝。</small>
+</main>
+<script>
+const s = new URLSearchParams(location.search).get("s");
+if (s) {
+  document.getElementById("qr").src = "/api/qr?s=" + encodeURIComponent(s);
+  document.getElementById("open").href = "/api/link?s=" + encodeURIComponent(s);
+} else {
+  document.querySelector("main").innerHTML = "<h1>連結不完整</h1><p>請回到會議聊天室重新開啟專屬連結。</p>";
+}
+</script>
+</body>
+</html>
