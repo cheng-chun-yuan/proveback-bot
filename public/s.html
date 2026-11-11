@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ProveBackBot 身分驗證</title>
+<title>ProveBackBot Verification</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -25,11 +25,11 @@ small{display:block;margin-top:16px;color:var(--ink2)}
 </head>
 <body>
 <main>
-  <h1>護照身分驗證</h1>
-  <p>用手機上的 Self App 掃描這個 QR code，再依指示感應護照。只會分享姓名與國籍，不會分享護照號碼或照片。</p>
-  <div class="qr"><img id="qr" alt="Self App 驗證 QR code"></div>
-  <div><a class="btn" id="open">已經在手機上？直接開啟 Self App</a></div>
-  <small>沒有 Self App？請先到 App Store 或 Google Play 搜尋「Self」安裝。</small>
+  <h1>Passport verification</h1>
+  <p>Scan this QR code with the Self App on your phone, then tap your passport as instructed. Only your name and nationality are shared, never your passport number or photo.</p>
+  <div class="qr"><img id="qr" alt="Self App verification QR code"></div>
+  <div><a class="btn" id="open">Already on your phone? Open the Self App</a></div>
+  <small>Don’t have the Self App? Search for “Self” on the App Store or Google Play.</small>
 </main>
 <script>
 const s = new URLSearchParams(location.search).get("s");
@@ -37,7 +37,7 @@ if (s) {
   document.getElementById("qr").src = "/api/qr?s=" + encodeURIComponent(s);
   document.getElementById("open").href = "/api/link?s=" + encodeURIComponent(s);
 } else {
-  document.querySelector("main").innerHTML = "<h1>連結不完整</h1><p>請回到會議聊天室重新開啟專屬連結。</p>";
+  document.querySelector("main").innerHTML = "<h1>Incomplete link</h1><p>Please go back to the meeting chat and open your personal link again.</p>";
 }
 </script>
 </body>

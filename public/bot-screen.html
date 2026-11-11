@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet">
 <style>
-/* 設計給 Recall 的 1280×720 鏡頭畫面；在一般瀏覽器裡會等比縮放（方便用筆電分享畫面當退路） */
+/* Built for Recall's 1280×720 camera feed; scales proportionally in a normal browser (handy as a laptop screen-share fallback) */
 :root{--bg:#0E1430;--panel:#161E44;--line:#2A3463;--ink:#EEF1FA;--ink2:#9BA3C4;--ok:#47C487;--bad:#F06A5F;--wait:#E0A33A;
   --sans:"Instrument Sans","Noto Sans TC","PingFang TC",system-ui,sans-serif}
 *{box-sizing:border-box}
@@ -41,14 +41,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 <body>
 <div class="stage" id="stage">
   <section class="qrcard">
-    <img id="qr" alt="成員驗證 QR code">
-    <h1>用 Self App 掃描驗證</h1>
-    <p>workspace 成員請直接掃描。<br>外部與會者請開啟聊天室裡的專屬連結。</p>
+    <img id="qr" alt="Member verification QR code">
+    <h1>Scan with the Self App to verify</h1>
+    <p>Workspace members: scan this code.<br>External guests: open your personal link in the chat.</p>
   </section>
   <section class="side">
-    <div class="brand"><b>ProveBackBot</b><span id="ws">載入中…</span></div>
+    <div class="brand"><b>ProveBackBot</b><span id="ws">Loading…</span></div>
     <div class="chips" id="chips"></div>
-    <div class="roster" id="roster"><div class="empty">等待與會者驗證…</div></div>
+    <div class="roster" id="roster"><div class="empty">Waiting for attendees to verify…</div></div>
     <div class="foot" id="foot"></div>
   </section>
 </div>
@@ -59,9 +59,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
   const stage = document.getElementById("stage");
   function fit() { const s = Math.min(innerWidth / 1280, innerHeight / 720); stage.style.transform = `translate(-50%,-50%) scale(${s})`; }
   addEventListener("resize", fit); fit();
-  if (!id) { document.getElementById("ws").textContent = "網址缺少 ?m=會議 ID"; return; }
+  if (!id) { document.getElementById("ws").textContent = "URL is missing ?m=<meeting ID>"; return; }
 
-  const KIND = { member: "成員", guest: "外部與會者", unknown: "未登記" };
+  const KIND = { member: "Member", guest: "External guest", unknown: "Unregistered" };
   const ICON = { ok: "✓", fail: "✕", pending: "…" };
   const esc = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   let lastSig = {}, qrSet = false;
@@ -75,19 +75,19 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
       const p = (m.workspace && m.workspace.policy) || {};
       document.getElementById("ws").textContent = (m.workspace && m.workspace.name) || "";
       document.getElementById("chips").innerHTML =
-        (p.strict ? '<span class="chip">Strict mode：只允許已登記成員</span>' : "") +
-        ((p.excludedCountries || []).length ? `<span class="chip">受限國籍：${esc(p.excludedCountries.join("、"))}</span>` : "");
+        (p.strict ? '<span class="chip">Strict mode: registered members only</span>' : "") +
+        ((p.excludedCountries || []).length ? `<span class="chip">Restricted nationalities: ${esc(p.excludedCountries.join(", "))}</span>` : "");
       const seats = m.seats.slice().sort((a, b) => ({ pending: 0, fail: 1, ok: 2 }[a.status] - { pending: 0, fail: 1, ok: 2 }[b.status]));
       document.getElementById("roster").innerHTML = seats.length ? seats.slice(0, 6).map((s) => {
         const sig = s.status + s.reason; const flash = lastSig[s.seatId] !== undefined && lastSig[s.seatId] !== sig; lastSig[s.seatId] = sig;
-        const why = s.status === "pending" ? (s.kind === "guest" ? "請開啟聊天室的專屬連結" : "請掃描左側 QR code") : s.reason;
+        const why = s.status === "pending" ? (s.kind === "guest" ? "Open your personal link in the chat" : "Scan the QR code on the left") : s.reason;
         return `<div class="row${flash ? " flash" : ""}"><div class="av">${esc((s.name || "?").slice(0, 1))}</div>
-          <div><div class="nm">${esc(s.name)}</div><div class="why">${esc(KIND[s.kind] || "")}｜${esc(why)}</div></div>
+          <div><div class="nm">${esc(s.name)}</div><div class="why">${esc(KIND[s.kind] || "")}${s.nationality ? " · " + esc(s.nationality) : ""} · ${esc(why)}</div></div>
           <div class="st ${s.status}">${ICON[s.status]}</div></div>`;
-      }).join("") : '<div class="empty">等待與會者驗證…</div>';
+      }).join("") : '<div class="empty">Waiting for attendees to verify…</div>';
       const ok = m.seats.filter((s) => s.status === "ok").length, bad = m.seats.filter((s) => s.status === "fail").length;
-      document.getElementById("foot").innerHTML = `<b>${ok}</b> 位已驗證　<b>${bad}</b> 位未通過　<b>${m.seats.length - ok - bad}</b> 位待驗證`;
-    } catch (e) { document.getElementById("foot").textContent = "連線中斷，重試中…"; }
+      document.getElementById("foot").innerHTML = `<b>${ok}</b> verified　<b>${bad}</b> failed　<b>${m.seats.length - ok - bad}</b> pending`;
+    } catch (e) { document.getElementById("foot").textContent = "Connection lost, retrying…"; }
   }
   tick(); setInterval(tick, 1500);
 })();

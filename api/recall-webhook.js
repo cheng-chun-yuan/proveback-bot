@@ -10,7 +10,7 @@ module.exports = handle(async (req, res) => {
   if (evt.event === "participant_events.join" && p.name && !p.is_host_bot) {
     const seat = await core.participantJoined(m, p.name);
     await core.saveMeeting(m);
-    if (seat && seat.kind === "guest") await core.chat(m, `${seat.name} 你好，請在手機開啟此連結完成護照驗證：${core.baseUrl(req)}/s.html?s=${seat.session}`);
+    if (seat && seat.kind === "guest") await core.chat(m, `Hi ${seat.name}, please open this link on your phone to verify your passport: ${core.baseUrl(req)}/s.html?s=${seat.session}`);
   }
   send(res, 200, { ok: true });
 });

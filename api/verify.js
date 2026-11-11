@@ -13,7 +13,7 @@ module.exports = handle(async (req, res) => {
   if (req.method !== "POST") return send(res, 405, { status: "error", result: false, reason: "POST only" });
   const { attestationId, proof, publicSignals, userContextData } = await body(req);
   if (!proof || !publicSignals || !attestationId || !userContextData)
-    return send(res, 400, { status: "error", result: false, reason: "缺少 proof、publicSignals、attestationId 或 userContextData" });
+    return send(res, 400, { status: "error", result: false, reason: "Missing proof, publicSignals, attestationId or userContextData" });
 
   const { SelfBackendVerifier, AllIds, DefaultConfigStore } = require("@selfxyz/core");
   // 這裡的設定必須和 QR code 裡的 disclosures 一致（見 lib/core.js 的 selfLink）
@@ -24,8 +24,8 @@ module.exports = handle(async (req, res) => {
 
   let result;
   try { result = await verifier.verify(attestationId, proof, publicSignals, userContextData); }
-  catch (e) { return send(res, 200, { status: "error", result: false, reason: "證明驗證失敗：" + e.message }); }
-  if (!result.isValidDetails.isValid) return send(res, 200, { status: "error", result: false, reason: "證明無效" });
+  catch (e) { return send(res, 200, { status: "error", result: false, reason: "Proof verification failed: " + e.message }); }
+  if (!result.isValidDetails.isValid) return send(res, 200, { status: "error", result: false, reason: "Invalid proof" });
 
   const d = result.discloseOutput;
   const outcome = await core.applyDisclosure(req, sessionFromUserIdentifier(result.userData.userIdentifier), {
