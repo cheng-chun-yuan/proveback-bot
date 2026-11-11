@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模擬會議室</title>
+<style>
+  body{font-family:system-ui,-apple-system,"PingFang TC",sans-serif;background:#1c1f26;color:#e8eaf0;margin:0;height:100vh;display:flex;flex-direction:column}
+  header{padding:12px 16px;border-bottom:1px solid #313642;font-size:14px}
+  header b{font-size:16px} .tag{background:#5a4a00;color:#ffe08a;border-radius:6px;padding:2px 8px;font-size:12px;margin-left:8px}
+  #log{flex:1;overflow:auto;padding:16px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+  .msg{margin-bottom:12px;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+  .msg .from{font-size:12px;color:#9aa3b5} .msg.bot .body{background:#27324d;border-radius:10px;padding:8px 12px;display:inline-block}
+  .msg.sys{color:#7d8698;font-size:13px;text-align:center} a{color:#8fb4ff}
+  form{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #313642;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+  input{flex:1;padding:10px;border-radius:8px;border:1px solid #3a4050;background:#12141a;color:inherit;font-size:15px;min-width:0}
+  button{padding:10px 16px;border:0;border-radius:8px;background:#3b6cf0;color:#fff;font-size:15px;cursor:pointer}
+</style>
+</head>
+<body>
+<header><b>模擬會議室</b><span class="tag">非真實會議,用來測 bot 流程</span> <span id="me"></span></header>
+<div id="log"></div>
+<form id="f"><input id="t" placeholder="先輸入你的名字加入會議" autocomplete="off"><button id="b">加入</button></form>
+<script>
+const room = new URLSearchParams(location.search).get('room');
+const api = (p, body) => fetch(`api/${room}/${p}`, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : undefined).then((r) => r.json());
+let me = null, shown = 0;
+const log = document.getElementById('log'), t = document.getElementById('t'), b = document.getElementById('b');
+
+function render(m) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + (m.from === null ? 'sys' : !me || m.from !== me.name ? 'bot' : '');
+  if (m.from !== null) { const f = document.createElement('div'); f.className = 'from'; f.textContent = m.from; d.append(f); }
+  const body = document.createElement('div'); body.className = 'body';
+  for (const part of m.text.split(/(https?:\/\/\S+)/)) {
+    if (/^https?:\/\//.test(part)) { const a = document.createElement('a'); a.href = part; a.target = '_blank'; a.textContent = part; body.append(a); }
+    else body.append(part);
+  }
+  d.append(body); log.append(d); log.scrollTop = log.scrollHeight;
+}
+async function poll() {
+  const msgs = await api('messages').catch(() => null);
+  if (Array.isArray(msgs)) for (; shown < msgs.length; shown++) render(msgs[shown]);
+}
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const v = t.value.trim(); if (!v) return; t.value = '';
+  if (!me) {
+    me = await api('join', { name: v });
+    document.getElementById('me').textContent = '你是:' + me.name;
+    t.placeholder = '輸入訊息(把驗證碼貼在這裡)'; b.textContent = '送出';
+  } else await api('chat', { id: me.id, name: me.name, text: v });
+  poll();
+});
+if (!room) log.textContent = '缺少 room 參數,請從 ProveBack 開啟連結。';
+else { poll(); setInterval(poll, 1000); }
+</script>
+</body>
+</html>
