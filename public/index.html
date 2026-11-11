@@ -22,7 +22,7 @@ h1{font:400 40px/1.1 var(--serif);letter-spacing:-0.01em;margin:0 0 8px;padding-
 h2{font-size:18px;font-weight:600;line-height:1.3;margin:0 0 14px}
 p.lede{color:var(--ink2);margin:14px 0 24px;max-width:62ch}
 .grid{display:grid;gap:24px}
-@media(min-width:880px){.grid{grid-template-columns:1fr 1fr}}
+@media(min-width:880px){.grid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px;min-width:0}
 label{display:block;font-size:14px;font-weight:500;color:var(--ink2);margin:14px 0 6px}
 input,select,textarea{font:400 16px var(--sans);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
@@ -34,8 +34,21 @@ button.ghost{background:var(--panel);color:var(--ink);border-color:var(--line);f
 button.ghost:hover{background:rgb(22 24 27 / .06)}
 button:disabled{opacity:.4;cursor:not-allowed}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button,.pill,th{white-space:nowrap}
+.acts{display:flex;gap:6px;justify-content:flex-end}
+td .row{flex-wrap:nowrap}
+h3{font-size:14px;font-weight:500;color:var(--ink2);margin:22px 0 0}
+.members{list-style:none;margin:0;padding:0}
+.members li{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line2)}
+.members li:first-child{border-top:0}
+.members .who{flex:1 1 150px;min-width:0}
+.members .who b{font-weight:600}
+.members .who>*{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.members .acts{flex:none}
+@media(max-width:560px){.members .who{flex-basis:100%}.members .acts{margin-left:auto}}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .wrap{overflow-x:auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 table{width:100%;border-collapse:collapse;font-size:15px}
 td,th{text-align:left;padding:12px 6px;border-top:1px solid var(--line2);vertical-align:middle}
 th{color:var(--ink2);font-weight:500;font-size:14px;border-top:0;padding-top:0}
@@ -64,7 +77,8 @@ code{font-size:13px;background:#eee9de;border-radius:4px;padding:2px 6px}
       <label for="banned">Restricted nationalities (ISO 3-letter codes, comma-separated)</label>
       <input id="banned" placeholder="PRK, IRN">
       <div class="row"><button id="savePolicy">Save policy</button></div>
-      <div class="wrap" style="margin-top:14px"><table><thead><tr><th>Member</th><th>Nationality</th><th>Status</th><th></th></tr></thead><tbody id="members"></tbody></table></div>
+      <h3>Members</h3>
+      <ul class="members" id="members"></ul>
       <div id="onboardBox"></div>
     </section>
 
@@ -113,10 +127,9 @@ code{font-size:13px;background:#eee9de;border-radius:4px;padding:2px 6px}
     $("#wsName").textContent = `Workspace: ${ws.name}`;
     $("#strict").checked = !!ws.policy.strict;
     $("#banned").value = (ws.policy.excludedCountries || []).join(", ");
-    $("#members").innerHTML = ws.members.map((m) => `<tr><td>${esc(m.name)}<div class="note">${esc(m.email)}</div></td>
-      <td>${m.nationality ? esc(m.nationality) : '<span class="note">—</span>'}</td>
-      <td><span class="pill ${m.onboarded ? "ok" : "pending"}">${m.onboarded ? "Passport bound" : "Not onboarded"}</span></td>
-      <td><button class="ghost" data-onboard="${esc(m.email)}">Generate onboarding QR</button>${m.onboarded ? ` <button class="ghost" data-unbind="${esc(m.email)}">Remove passport binding</button>` : ""}</td></tr>`).join("");
+    $("#members").innerHTML = ws.members.map((m) => `<li><div class="who"><b>${esc(m.name)}</b><div class="note">${esc(m.email)}${m.nationality ? " · " + esc(m.nationality) : ""}</div></div>
+      <span class="pill ${m.onboarded ? "ok" : "pending"}">${m.onboarded ? "Passport bound" : "Not onboarded"}</span>
+      <div class="acts"><button class="ghost" data-onboard="${esc(m.email)}">Onboarding QR</button>${m.onboarded ? `<button class="ghost" data-unbind="${esc(m.email)}" aria-label="Remove passport binding for ${esc(m.name)}">Unbind</button>` : ""}</div></li>`).join("");
     $("#memberPassport").innerHTML = ws.members.map((m) => `<option value="${esc(m.email)}">${esc(m.name)}’s passport</option>`).join("") + `<option value="__evil">Impostor’s own passport</option>`;
   }
 

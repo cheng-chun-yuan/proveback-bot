@@ -47,6 +47,8 @@ html,body{margin:0;height:100%;background:var(--board);color:#fff;font-family:va
 .empty{color:var(--dim);font-size:28px;margin:auto 0}
 .foot{margin-top:12px;font-size:18px;color:var(--dim);min-height:22px}
 @media (prefers-reduced-motion:reduce){.row.flash{animation:none}.tally .arc{transition:none}}
+/* The QR image gets its src from script; keep the empty tag invisible until then */
+img:not([src]){visibility:hidden}
 </style>
 </head>
 <body>

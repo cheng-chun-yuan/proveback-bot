@@ -25,6 +25,8 @@ a.btn{display:flex;justify-content:center;margin-top:12px;background:var(--green
 a.btn:hover{background:var(--green-deep)}
 a.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 small{display:block;margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink2);font-size:14px}
+/* The QR image gets its src from script; keep the empty tag invisible until then */
+img:not([src]){visibility:hidden}
 </style>
 </head>
 <body>
